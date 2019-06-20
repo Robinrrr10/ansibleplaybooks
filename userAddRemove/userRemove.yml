@@ -1,0 +1,14 @@
+#To run this play book use below command
+#ansible-playbook addUser.yml --extra-vars "username=raja"
+---
+- name: Add user
+  hosts: webserver
+  become: true
+  become_user: root
+  tasks:
+    - name: Add users
+      user:
+        name={{ item }}
+        state=absent
+      with_items:
+        - "{{ username }}"
