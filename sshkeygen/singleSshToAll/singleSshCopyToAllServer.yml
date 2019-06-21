@@ -1,0 +1,78 @@
+#This playbook will add one user to all newservers, ssh keygen will be generated on commonserver. that will be copied to all newservers. So the user of commonserver can connect to any of the newservers without password
+#below is the command to run. we can give user name and password.
+#ansible-playbook singleSshCopyToAllServer.yml --extra-vars "username=testuser4 userpassword=testuser444" -i newhosts
+---
+- name: Add user to all server
+  hosts: allservers
+  become: true
+  become_user: root
+  tasks:
+    
+    - name: Change given password to encrypted format
+      local_action: command python -c 'import crypt; print crypt.crypt("{{ userpassword }}", "$1$SomeSalt$")'
+      register: encrypteduserpassword
+    
+    - name: Add new users with password
+      user:
+        name={{ item }}
+        state=present
+        password={{ encrypteduserpassword.stdout }}
+      with_items:
+        - "{{ username }}"
+
+- name: Generate ssh key for single server
+  hosts: commonserver
+  become: true
+  become_user: root
+  tasks:
+    - name: Generate ssh key for new user
+      user:
+        name={{ item }}
+        generate_ssh_key=true
+        ssh_key_bits=4096
+        ssh_key_file=.ssh/id_rsa
+      with_items:
+        - "{{ username }}"
+
+    - name: Save public key in registry
+      command: "cat /home/{{ username }}/.ssh/id_rsa.pub"
+      register: key
+
+    - name: Write public key in a file
+      local_action: shell echo {{ key.stdout }} >> /home/tmpkey.txt
+
+- name: Copy ssh key in server
+  hosts: newservers
+  become: true
+  become_user: root
+  tasks:
+    
+    - name: Check directory is present in newservers
+      file:
+        path=/home/{{ username }}/.ssh
+        state=directory
+        group={{ username }}
+        owner={{ username }}
+
+    - name: Copy authorized key file to the server
+      copy: src=/home/tmpkey.txt dest=/home/{{ username }}/.ssh/tmpauthorized_keys
+    
+    - name: append the key with authorized_keys file
+      shell: cat /home/{{ username }}/.ssh/tmpauthorized_keys >> /home/{{ username }}/.ssh/authorized_keys    
+
+    - name: Delete tmpauthorized_keys file in server
+      file: path=/home/{{ username }}/.ssh/tmpauthorized_keys state=absent
+ 
+    - name: Give permission to that user for the file
+      file: 
+        path=/home/{{ username }}/.ssh/authorized_keys
+        group={{ username }}
+        owner={{ username }}
+
+#- name: Delete local copy of ssh key
+#  hosts: commonserver
+#  become: true
+#  become_user: root
+#  tasks:
+#     - name: Delete local tmpkey file
+#       local_action: file path=/home/tmpkey.txt state=absent

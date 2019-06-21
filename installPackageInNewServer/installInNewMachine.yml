@@ -1,0 +1,15 @@
+---
+- name: Install required package in new cent os machine
+  hosts: freshservers
+  become: true
+  become_user: root
+  tasks:
+    - name: Install all need packages. Installing {{ item }}
+      yum:
+        name={{ item }}
+        state=installed
+      with_items:
+        - vim
+        - wget
+        - epel-release
+        - net-tools
