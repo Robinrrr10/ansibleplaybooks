@@ -1,0 +1,4 @@
+---
+
+- name: copy other files
+  copy: src=/home/files/configfiles dest=/home/config

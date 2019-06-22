@@ -1,0 +1,20 @@
+---
+
+- name: change given password to encrypted
+  local_action: command python -c 'import crypt; print crypt.crypt("{{ pass }}", "$1$SomeSalt$")'
+  register: encrypteduserpassword
+
+- name: create sudo user with password
+  user: name={{ name }} state=present password={{ encrypteduserpassword.stdout }}
+  tags: usr
+
+- name: adding line in sudoers file to give full permission
+  lineinfile:
+       line="{{ name }}    ALL=(ALL)       ALL"
+       dest=/etc/sudoers
+       state=present
+
+- name: Copy user file
+  template: src=userdetail.txt dest=/home/{{ name }}/userdetail.txt
+  tags: usrdtl
+  notify: copy other files

@@ -1,0 +1,4 @@
+This is used from ansible
+
+username: {{ name }}
+password: {{ pass }}

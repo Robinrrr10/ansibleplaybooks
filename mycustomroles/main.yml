@@ -1,0 +1,25 @@
+# This will create new user with sudo permission and this will install httpd with an index file
+# to run the playbook use below command
+# ansible-playbook main.yml -i hosts
+
+---
+- hosts: allservers
+  tasks:
+   
+- name: add user
+  hosts: baseserver
+  become: yes
+  become_user: root
+  tasks:
+
+  roles:
+     - users
+
+- name: Install apache httpd with index.html
+  hosts: webservers
+  become: yes
+  become_user: root
+  tasks:
+
+  roles:
+     - web
