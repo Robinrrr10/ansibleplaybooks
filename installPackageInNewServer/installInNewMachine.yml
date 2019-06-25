@@ -13,3 +13,4 @@
         - wget
         - epel-release
         - net-tools
+        - tree

@@ -1,0 +1,26 @@
+# This playbook is used to create sudo users
+#To run this play book use below command
+# ansible-playbook addSudoUser.yml --extra-vars "username=robin userpassword=robin123" -i hosts
+# or 
+#ansible-playbook addSudoUser.yml --extra-vars "username=robin userpassword=robin123" -i hosts --ask-pass root
+---
+- name: Add user
+  hosts: newservers
+  become: true
+  become_user: root
+  tasks:
+    - name: change given password to encrypted
+      local_action: command python -c 'import crypt; print crypt.crypt("{{ userpassword }}")'
+      register: encrypteduserpassword
+    - name: Add users user with password
+      user:
+        name={{ item }}
+        state=present
+        password={{ encrypteduserpassword.stdout }}
+      with_items:
+        - "{{ username }}"
+    - name: adding line in sudoers file to give full permission to the user
+      lineinfile:
+        line="{{ username }}    ALL=(ALL)       ALL"
+        dest=/etc/sudoers
+        state=present
